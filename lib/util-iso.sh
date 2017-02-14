@@ -71,7 +71,10 @@ trap_exit() {
 make_sig () {
     msg2 "Creating signature file..."
     cd "$1"
-    gpg --detach-sign --default-key ${GPGKEY} $2.sfs
+    # needs to be run as user
+    #gpg --detach-sign --default-key ${GPGKEY} $2.sfs
+    mksig -k "${GPGKEY}" -d "$2.sfs" -s
+
     cd ${OLDPWD}
 }
 
@@ -340,11 +343,25 @@ make_image_mhwd() {
 prepare_initramfs(){
     cp $1/mkinitcpio.conf $2/etc/mkinitcpio-${iso_name}.conf
     set_mkinicpio_hooks "$2/etc/mkinitcpio-${iso_name}.conf"
-#     local _kernver=$(cat $2/usr/lib/modules/*/version)
-#     chroot-run $2 \
-#         /usr/bin/mkinitcpio -k ${_kernver} \
-#         -c /etc/mkinitcpio-${iso_name}.conf \
-#         -g /boot/initramfs.img
+
+    if [[ ${GPGKEY} ]]; then
+        # needs to be run as user
+        #gpg --export ${GPGKEY} >${work_dir}/gpgkey
+        mksig -k "${GPGKEY}" -d "${work_dir}/gpgkey" -e
+
+        exec 17<>${work_dir}/gpgkey
+    fi
+
+    MISO_GNUPG_FD=${GPGKEY:+17}
+
+    chroot-run $2 \
+        /usr/bin/mkinitcpio -k $(cat $2/usr/lib/modules/*/version) \
+        -c /etc/mkinitcpio-${iso_name}.conf \
+        -g /boot/initramfs.img
+
+    if [[ ${GPGKEY} ]]; then
+        exec 17<&-
+    fi
 }
 
 make_image_boot() {
@@ -366,21 +383,6 @@ make_image_boot() {
 
         prepare_initcpio "${path}"
         prepare_initramfs "${profile_dir}" "${path}"
-
-        if [[ ${GPGKEY} ]]; then
-            gpg --export ${GPGKEY} >${work_dir}/gpgkey
-            exec 17<>${work_dir}/gpgkey
-        fi
-
-        MISO_GNUPG_FD=${GPGKEY:+17} chroot-run ${path} \
-            /usr/bin/mkinitcpio -k $(cat ${path}/usr/lib/modules/*/version) \
-            -c /etc/mkinitcpio-${iso_name}.conf \
-            -g /boot/initramfs.img
-
-
-        if [[ ${GPGKEY} ]]; then
-            exec 17<&-
-        fi
 
         mv ${path}/boot/initramfs.img ${boot}/${target_arch}/initramfs.img
         prepare_boot_extras "${path}" "${boot}"

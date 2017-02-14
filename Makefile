@@ -1,4 +1,4 @@
-Version=0.14.0
+Version=0.14.2
 
 PREFIX = /usr/local
 SYSCONFDIR = /etc
@@ -63,6 +63,7 @@ LIST_ISO = \
 BIN_ISO = \
 	bin/buildiso \
 	bin/testiso \
+	bin/mksig \
 	bin/deployiso
 
 LIBS_ISO = \

@@ -109,7 +109,6 @@ display_settings(){
 load_user_info
 
 load_config "${USERCONFDIR}/manjaro-tools.conf" || load_config "${SYSCONFDIR}/manjaro-tools.conf"
-load_vars "$USER_HOME/.makepkg.conf" || load_vars /etc/makepkg.conf
 
 # to force old way to have buildiso run in iso-profiles dir
 # run_dir=$(pwd)
@@ -179,6 +178,8 @@ done
 shift $(($OPTIND - 1))
 
 timer_start=$(get_timer)
+
+${sign} && load_vars "$USER_HOME/.makepkg.conf" || load_vars /etc/makepkg.conf
 
 check_root "$0" "${orig_argv[@]}"
 
