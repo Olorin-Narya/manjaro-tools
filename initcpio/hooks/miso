@@ -158,7 +158,8 @@ miso_mount_handler() {
 
     if [[ "${checksum}" == "y" ]]; then
         for fs in rootfs desktopfs mhwdfs livefs;do
-            if [[ -f "/run/miso/bootmnt/${misobasedir}/${arch}/${fs}.md5" ]]; then
+            if [[ -f "/run/miso/bootmnt/${misobasedir}/${arch}/${fs}" ]] \
+            && [[ -f "/run/miso/bootmnt/${misobasedir}/${arch}/${fs}.md5" ]]; then
                 msg -n ":: Self-test requested, please wait..."
                 if _verify_checksum "${fs}"; then
                     msg "done. Checksum is OK, continue booting."
@@ -176,7 +177,8 @@ miso_mount_handler() {
 
     if [[ "${verify}" == "y" ]]; then
         for fs in rootfs desktopfs mhwdfs livefs;do
-            if [[ -f "/run/miso/bootmnt/${misobasedir}/${arch}/${fs}.sfs.sig" ]]; then
+            if [[ -f "/run/miso/bootmnt/${misobasedir}/${arch}/${fs}.sfs" ]] \
+            && [[ -f "/run/miso/bootmnt/${misobasedir}/${arch}/${fs}.sfs.sig" ]]; then
                 msg -n ":: Signature verification requested, please wait..."
                 if _verify_signature "${fs}"; then
                     msg "done. Signature is OK, continue booting."
