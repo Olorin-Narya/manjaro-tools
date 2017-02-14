@@ -42,6 +42,25 @@ prepare_initcpio(){
 #     sed -e "s|/usr/lib/initcpio/|/etc/initcpio/|" -i $1/etc/initcpio/install/miso_shutdown
 }
 
+prepare_initramfs(){
+    cp $1/mkinitcpio.conf $2/etc/mkinitcpio-${iso_name}.conf
+    set_mkinicpio_hooks "$2/etc/mkinitcpio-${iso_name}.conf"
+
+    if [[ -n ${gpgkey} ]]; then
+        su ${OWNER} -c "gpg --export ${gpgkey} >${USER_HOME}/gpgkey"
+        exec 17<>${USER_HOME}/gpgkey
+    fi
+
+    MISO_GNUPG_FD=${GPGKEY:+17} chroot-run $2 \
+        /usr/bin/mkinitcpio -k $(cat $2/usr/lib/modules/*/version) \
+        -c /etc/mkinitcpio-${iso_name}.conf \
+        -g /boot/initramfs.img
+
+    if [[ -n ${gpgkey} ]]; then
+        exec 17<&-
+    fi
+}
+
 prepare_boot_extras(){
     cp $1/boot/intel-ucode.img $2/intel_ucode.img
     cp $1/usr/share/licenses/intel-ucode/LICENSE $2/intel_ucode.LICENSE

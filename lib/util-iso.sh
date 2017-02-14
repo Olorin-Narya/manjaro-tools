@@ -152,7 +152,7 @@ make_sfs() {
     make_checksum "${dest}" "${name}"
     ${persist} && rm "${src}.img"
 
-    if [[ ${GPGKEY} ]]; then
+    if [[ -n ${gpgkey} ]]; then
         make_sig "${dest}" "${name}"
     fi
 
@@ -336,25 +336,6 @@ make_image_mhwd() {
         clean_up_image "${path}"
         : > ${work_dir}/build.${FUNCNAME}
         msg "Done [drivers repository] (mhwdfs)"
-    fi
-}
-
-prepare_initramfs(){
-    cp $1/mkinitcpio.conf $2/etc/mkinitcpio-${iso_name}.conf
-    set_mkinicpio_hooks "$2/etc/mkinitcpio-${iso_name}.conf"
-
-    if [[ ${GPGKEY} ]]; then
-        su ${OWNER} -c "gpg --export ${GPGKEY} >${USER_HOME}/gpgkey"
-        exec 17<>${USER_HOME}/gpgkey
-    fi
-
-    MISO_GNUPG_FD=${GPGKEY:+17} chroot-run $2 \
-        /usr/bin/mkinitcpio -k $(cat $2/usr/lib/modules/*/version) \
-        -c /etc/mkinitcpio-${iso_name}.conf \
-        -g /boot/initramfs.img
-
-    if [[ ${GPGKEY} ]]; then
-        exec 17<&-
     fi
 }
 
