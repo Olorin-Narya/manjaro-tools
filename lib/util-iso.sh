@@ -373,7 +373,7 @@ make_image_boot() {
         fi
 
         MISO_GNUPG_FD=${GPGKEY:+17} chroot-run ${path} \
-            /usr/bin/mkinitcpio -k ${path}/usr/lib/modules/*/version) \
+            /usr/bin/mkinitcpio -k $(cat ${path}/usr/lib/modules/*/version) \
             -c /etc/mkinitcpio-${iso_name}.conf \
             -g /boot/initramfs.img
 
