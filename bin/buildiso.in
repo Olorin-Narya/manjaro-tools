@@ -109,6 +109,7 @@ display_settings(){
 load_user_info
 
 load_config "${USERCONFDIR}/manjaro-tools.conf" || load_config "${SYSCONFDIR}/manjaro-tools.conf"
+load_vars "$USER_HOME/.makepkg.conf" || load_vars /etc/makepkg.conf
 
 # to force old way to have buildiso run in iso-profiles dir
 # run_dir=$(pwd)
@@ -121,7 +122,6 @@ images_only=false
 iso_only=false
 verbose=false
 persist=false
-sign=false
 
 usage() {
     echo "Usage: ${0##*/} [options]"
@@ -136,12 +136,13 @@ usage() {
     echo "                       [default: ${kernel}]"
     echo '    -i <name>          Init system to use'
     echo "                       [default: ${initsys}]"
+    echo '    -g <key>           Gpg key for sfs signing'
+    echo "                       [default: ${GPGKEY}]"
     echo '    -m                 Set SquashFS image mode to persistence'
     echo '    -c                 Disable clean work dir'
     echo '    -x                 Build images only'
     echo '    -z                 Generate iso only'
     echo '                       Requires pre built images (-x)'
-    echo '    -s                 Sign images'
     echo '    -v                 Verbose output to log file, show profile detail (-q)'
     echo '    -q                 Query settings and pretend build'
     echo '    -h                 This help'
@@ -152,7 +153,7 @@ usage() {
 
 orig_argv=("$@")
 
-opts='p:a:b:r:t:k:i:cszxmvqh'
+opts='p:a:b:r:t:k:i:g:czxmvqh'
 
 while getopts "${opts}" arg; do
     case "${arg}" in
@@ -166,7 +167,7 @@ while getopts "${opts}" arg; do
         c) clean_first=false ;;
         x) images_only=true ;;
         z) iso_only=true ;;
-        s) sign=true ;;
+        g) GPGKEY="$OPTARG" ;;
         m) persist=true ;;
         v) verbose=true ;;
         q) pretend=true ;;
@@ -178,8 +179,6 @@ done
 shift $(($OPTIND - 1))
 
 timer_start=$(get_timer)
-
-${sign} && load_vars "$USER_HOME/.makepkg.conf" || load_vars /etc/makepkg.conf
 
 check_root "$0" "${orig_argv[@]}"
 

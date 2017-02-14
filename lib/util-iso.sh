@@ -73,7 +73,7 @@ make_sig () {
     cd "$1"
     chown ${OWNER} $1
     su ${OWNER} -c "gpg --detach-sign --default-key ${GPGKEY} $2.sfs"
-    chown root $1
+    chown -R root $1
     cd ${OLDPWD}
 }
 
