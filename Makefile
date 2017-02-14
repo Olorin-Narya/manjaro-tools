@@ -63,7 +63,6 @@ LIST_ISO = \
 BIN_ISO = \
 	bin/buildiso \
 	bin/testiso \
-	bin/mksig \
 	bin/deployiso
 
 LIBS_ISO = \

@@ -71,10 +71,9 @@ trap_exit() {
 make_sig () {
     msg2 "Creating signature file..."
     cd "$1"
-    # needs to be run as user
-    #gpg --detach-sign --default-key ${GPGKEY} $2.sfs
-    mksig -k "${GPGKEY}" -d "$2.sfs" -s
-
+    chown ${OWNER} $1
+    su ${OWNER} -c "gpg --detach-sign --default-key ${GPGKEY} $2.sfs"
+    chown root $1
     cd ${OLDPWD}
 }
 
@@ -345,16 +344,11 @@ prepare_initramfs(){
     set_mkinicpio_hooks "$2/etc/mkinitcpio-${iso_name}.conf"
 
     if [[ ${GPGKEY} ]]; then
-        # needs to be run as user
-        #gpg --export ${GPGKEY} >${work_dir}/gpgkey
-        mksig -k "${GPGKEY}" -d "${work_dir}/gpgkey" -e
-
-        exec 17<>${work_dir}/gpgkey
+        su ${OWNER} -c "gpg --export ${GPGKEY} >${USER_HOME}/gpgkey"
+        exec 17<>${USER_HOME}/gpgkey
     fi
 
-    MISO_GNUPG_FD=${GPGKEY:+17}
-
-    chroot-run $2 \
+    MISO_GNUPG_FD=${GPGKEY:+17} chroot-run $2 \
         /usr/bin/mkinitcpio -k $(cat $2/usr/lib/modules/*/version) \
         -c /etc/mkinitcpio-${iso_name}.conf \
         -g /boot/initramfs.img
