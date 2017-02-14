@@ -71,7 +71,7 @@ trap_exit() {
 make_sig () {
     msg2 "Creating signature file..."
     cd "$1"
-    gpg --detach-sign --default-key ${gpg_key} $2.sfs
+    gpg --detach-sign --default-key ${GPGKEY} $2.sfs
     cd ${OLDPWD}
 }
 
@@ -149,6 +149,10 @@ make_sfs() {
     fi
     make_checksum "${dest}" "${name}"
     ${persist} && rm "${src}.img"
+
+    if [[ ${GPGKEY} ]]; then
+        make_sig "${dest}" "${name}"
+    fi
 
     show_elapsed_time "${FUNCNAME}" "${timer_start}"
 }
@@ -333,6 +337,16 @@ make_image_mhwd() {
     fi
 }
 
+prepare_initramfs(){
+    cp $1/mkinitcpio.conf $2/etc/mkinitcpio-${iso_name}.conf
+    set_mkinicpio_hooks "$2/etc/mkinitcpio-${iso_name}.conf"
+#     local _kernver=$(cat $2/usr/lib/modules/*/version)
+#     chroot-run $2 \
+#         /usr/bin/mkinitcpio -k ${_kernver} \
+#         -c /etc/mkinitcpio-${iso_name}.conf \
+#         -g /boot/initramfs.img
+}
+
 make_image_boot() {
     if [[ ! -e ${work_dir}/build.${FUNCNAME} ]]; then
         msg "Prepare [/iso/%s/boot]" "${iso_name}"
@@ -351,25 +365,29 @@ make_image_boot() {
         fi
 
         prepare_initcpio "${path}"
-
-#         if [[ ${gpg_key} ]]; then
-#             gpg --export ${gpg_key} >${work_dir}/gpgkey
-#             exec 17<>${work_dir}/gpgkey
-#         fi
-#         MISO_GNUPG_FD=${gpg_key:+17}
-
         prepare_initramfs "${profile_dir}" "${path}"
 
-#         if [[ ${gpg_key} ]]; then
-#             exec 17<&-
-#         fi
+        if [[ ${GPGKEY} ]]; then
+            gpg --export ${GPGKEY} >${work_dir}/gpgkey
+            exec 17<>${work_dir}/gpgkey
+        fi
+
+        MISO_GNUPG_FD=${GPGKEY:+17} chroot-run ${path} \
+            /usr/bin/mkinitcpio -k ${path}/usr/lib/modules/*/version) \
+            -c /etc/mkinitcpio-${iso_name}.conf \
+            -g /boot/initramfs.img
+
+
+        if [[ ${GPGKEY} ]]; then
+            exec 17<&-
+        fi
 
         mv ${path}/boot/initramfs.img ${boot}/${target_arch}/initramfs.img
         prepare_boot_extras "${path}" "${boot}"
 
         umount_fs
 
-        rm -R ${path}
+        #rm -R ${path}
         : > ${work_dir}/build.${FUNCNAME}
         msg "Done [/iso/%s/boot]" "${iso_name}"
     fi

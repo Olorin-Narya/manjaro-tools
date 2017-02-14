@@ -88,6 +88,7 @@ display_settings(){
     msg2 "images_only: %s" "${images_only}"
     msg2 "iso_only: %s" "${iso_only}"
     msg2 "persist: %s" "${persist}"
+    msg2 "sign: %s" "${sign}"
 
     msg "DIST SETTINGS:"
     msg2 "dist_name: %s" "${dist_name}"
@@ -108,6 +109,7 @@ display_settings(){
 load_user_info
 
 load_config "${USERCONFDIR}/manjaro-tools.conf" || load_config "${SYSCONFDIR}/manjaro-tools.conf"
+load_vars "$USER_HOME/.makepkg.conf" || load_vars /etc/makepkg.conf
 
 # to force old way to have buildiso run in iso-profiles dir
 # run_dir=$(pwd)
@@ -120,6 +122,7 @@ images_only=false
 iso_only=false
 verbose=false
 persist=false
+sign=false
 
 usage() {
     echo "Usage: ${0##*/} [options]"
@@ -139,6 +142,7 @@ usage() {
     echo '    -x                 Build images only'
     echo '    -z                 Generate iso only'
     echo '                       Requires pre built images (-x)'
+    echo '    -s                 Sign images'
     echo '    -v                 Verbose output to log file, show profile detail (-q)'
     echo '    -q                 Query settings and pretend build'
     echo '    -h                 This help'
@@ -149,7 +153,7 @@ usage() {
 
 orig_argv=("$@")
 
-opts='p:a:b:r:t:k:i:czxmvqh'
+opts='p:a:b:r:t:k:i:cszxmvqh'
 
 while getopts "${opts}" arg; do
     case "${arg}" in
@@ -163,6 +167,7 @@ while getopts "${opts}" arg; do
         c) clean_first=false ;;
         x) images_only=true ;;
         z) iso_only=true ;;
+        s) sign=true ;;
         m) persist=true ;;
         v) verbose=true ;;
         q) pretend=true ;;

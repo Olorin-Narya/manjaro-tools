@@ -42,16 +42,6 @@ prepare_initcpio(){
 #     sed -e "s|/usr/lib/initcpio/|/etc/initcpio/|" -i $1/etc/initcpio/install/miso_shutdown
 }
 
-prepare_initramfs(){
-    cp $1/mkinitcpio.conf $2/etc/mkinitcpio-${iso_name}.conf
-    set_mkinicpio_hooks "$2/etc/mkinitcpio-${iso_name}.conf"
-    local _kernver=$(cat $2/usr/lib/modules/*/version)
-    chroot-run $2 \
-        /usr/bin/mkinitcpio -k ${_kernver} \
-        -c /etc/mkinitcpio-${iso_name}.conf \
-        -g /boot/initramfs.img
-}
-
 prepare_boot_extras(){
     cp $1/boot/intel-ucode.img $2/intel_ucode.img
     cp $1/usr/share/licenses/intel-ucode/LICENSE $2/intel_ucode.LICENSE
