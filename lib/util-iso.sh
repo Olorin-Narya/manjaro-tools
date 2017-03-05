@@ -374,24 +374,22 @@ make_image_boot() {
     fi
 }
 
-# Prepare /EFI
 make_efi_usb() {
     if [[ ! -e ${work_dir}/build.${FUNCNAME} ]]; then
         msg "Prepare [/iso/EFI]"
-        prepare_efi_loader  "${work_dir}/livefs" "${iso_root}" "usb"
+
+        prepare_efi_grub "${iso_root}"
+
         : > ${work_dir}/build.${FUNCNAME}
         msg "Done [/iso/EFI]"
     fi
 }
 
-# Prepare kernel.img::/EFI for "El Torito" EFI boot mode
-make_efi_dvd() {
+make_efi_dvd(){
     if [[ ! -e ${work_dir}/build.${FUNCNAME} ]]; then
-        msg "Prepare [/efiboot/EFI]"
-        local src="${iso_root}/EFI/miso"
+        msg "Prepare [/iso/EFI]"
+        local src="${iso_root}/EFI/miso" size=31M
         mkdir -p "${src}"
-
-        local size=31M
         local mnt="${mnt_dir}/efiboot" img="${src}/efiboot.img"
         ${pxe_boot} && size=46M
         msg2 "Creating fat image of %s ..." "${size}"
@@ -400,11 +398,13 @@ make_efi_dvd() {
         mkdir -p "${mnt}"
         mount_img "${img}" "${mnt}"
         prepare_efiboot_image "${mnt}" "${iso_root}"
-        prepare_efi_loader "${work_dir}/livefs" "${mnt}" "dvd"
+
+        prepare_efi_grub "${mnt}"
+
         umount_img "${mnt}"
 
         : > ${work_dir}/build.${FUNCNAME}
-        msg "Done [/efiboot/EFI]"
+        msg "Done [/iso/EFI]"
     fi
 }
 
@@ -414,7 +414,6 @@ make_isolinux() {
         local isolinux=${iso_root}/isolinux
         mkdir -p ${isolinux}
         prepare_isolinux "${work_dir}/livefs" "${isolinux}"
-
         : > ${work_dir}/build.${FUNCNAME}
         msg "Done [/iso/isolinux]"
     fi

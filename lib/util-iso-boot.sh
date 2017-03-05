@@ -77,31 +77,41 @@ vars_to_boot_conf(){
         -i $1
 }
 
-prepare_efi_loader(){
-    local efi_data=$1/usr/share/efi-utils efi=$2/EFI/boot
-    msg2 "Preparing efi loaders ..."
+# prepare_efi_loader(){
+#     local efi_data=$1/usr/share/efi-utils efi=$2/EFI/boot
+#     msg2 "Preparing efi loaders ..."
+#     prepare_dir "${efi}"
+#     cp $1/usr/share/efitools/efi/PreLoader.efi ${efi}/bootx64.efi
+#     cp $1/usr/share/efitools/efi/HashTool.efi ${efi}
+#     cp ${efi_data}/gummibootx64.efi ${efi}/loader.efi
+#     cp ${efi_data}/shellx64_v{1,2}.efi $2/EFI
+#
+#     local entries=$2/loader/entries
+#     msg2 "Preparing efi loader config ..."
+#     prepare_dir "${entries}"
+#
+#     cp ${efi_data}/loader.conf $2/loader/loader.conf
+#     vars_to_boot_conf $2/loader/loader.conf
+#     cp ${efi_data}/uefi-shell-v{1,2}-x86_64.conf ${entries}
+#
+#     local drv='free' switch="no"
+#     cp ${efi_data}/entry-x86_64-$3.conf ${entries}/${iso_name}-x86_64.conf
+#     vars_to_boot_conf "${entries}/${iso_name}-x86_64.conf" "$drv" "$switch"
+#     if ${nonfree_mhwd};then
+#         drv='nonfree' switch="yes"
+#         cp ${efi_data}/entry-x86_64-$3.conf ${entries}/${iso_name}-x86_64-nonfree.conf
+#         vars_to_boot_conf "${entries}/${iso_name}-x86_64-nonfree.conf" "$drv" "$switch"
+#     fi
+# }
+
+prepare_efi_grub(){
+    local efi=$1/EFI/boot
+    msg2 "Preparing efi grub ..."
     prepare_dir "${efi}"
-    cp $1/usr/share/efitools/efi/PreLoader.efi ${efi}/bootx64.efi
-    cp $1/usr/share/efitools/efi/HashTool.efi ${efi}
-    cp ${efi_data}/gummibootx64.efi ${efi}/loader.efi
-    cp ${efi_data}/shellx64_v{1,2}.efi $2/EFI
 
-    local entries=$2/loader/entries
-    msg2 "Preparing efi loader config ..."
-    prepare_dir "${entries}"
+    grub-install --target=x86_64-efi --efi-directory=${efi} --bootloader-id=miso_grub --recheck --debug
 
-    cp ${efi_data}/loader.conf $2/loader/loader.conf
-    vars_to_boot_conf $2/loader/loader.conf
-    cp ${efi_data}/uefi-shell-v{1,2}-x86_64.conf ${entries}
-
-    local drv='free' switch="no"
-    cp ${efi_data}/entry-x86_64-$3.conf ${entries}/${iso_name}-x86_64.conf
-    vars_to_boot_conf "${entries}/${iso_name}-x86_64.conf" "$drv" "$switch"
-    if ${nonfree_mhwd};then
-        drv='nonfree' switch="yes"
-        cp ${efi_data}/entry-x86_64-$3.conf ${entries}/${iso_name}-x86_64-nonfree.conf
-        vars_to_boot_conf "${entries}/${iso_name}-x86_64-nonfree.conf" "$drv" "$switch"
-    fi
+    grub-mkconfig -o ${efi}/grub.cfg
 }
 
 check_syslinux_select(){
