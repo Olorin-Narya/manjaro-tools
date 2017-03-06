@@ -56,83 +56,87 @@ prepare_boot_extras(){
     cp $1/usr/share/licenses/common/GPL2/license.txt $2/memtest.COPYING
 }
 
-prepare_efiboot_image(){
-    local efi=$1/EFI/miso boot=$2/${iso_name}/boot
-    prepare_dir "${efi}"
-    cp ${boot}/x86_64/vmlinuz ${efi}/vmlinuz.efi
-    cp ${boot}/x86_64/initramfs.img ${efi}/initramfs.img
-    if [[ -f ${boot}/intel_ucode.img ]] ; then
-        cp ${boot}/intel_ucode.img ${efi}/intel_ucode.img
-    fi
-}
+# prepare_efiboot_image(){
+#     local efi=$1/EFI/miso boot=$2/${iso_name}/boot
+#     prepare_dir "${efi}"
+#     cp ${boot}/x86_64/vmlinuz ${efi}/vmlinuz.efi
+#     cp ${boot}/x86_64/initramfs.img ${efi}/initramfs.img
+#     if [[ -f ${boot}/intel_ucode.img ]] ; then
+#         cp ${boot}/intel_ucode.img ${efi}/intel_ucode.img
+#     fi
+# }
 
 vars_to_boot_conf(){
     sed -e "s|@ISO_NAME@|${iso_name}|g" \
         -e "s|@ISO_LABEL@|${iso_label}|g" \
         -e "s|@DIST_NAME@|${dist_name}|g" \
         -e "s|@ARCH@|${target_arch}|g" \
-        -e "s|@DRV@|$2|g" \
-        -e "s|@SWITCH@|$3|g" \
         -e "s|@BOOT_ARGS@||g" \
         -i $1
 }
 
-prepare_efi_grub(){
-    local efi=$1/EFI/boot grub_dir=$1/boot/grub
-    msg2 "Preparing efi grub ..."
-
-    prepare_dir "${efi}"
-    prepare_dir "${grub_dir}"
-    cp -r /usr/lib/grub/x86_64-efi/ "${grub_dir}"
-    cp /usr/share/grub/unicode.pf2 "${grub_dir}"
-    cp $2/usr/share/efitools/efi/PreLoader.efi ${efi}/bootx64.efi
-    cp $2/usr/share/efi-utils/grubx64.efi ${efi}/
-    cp $2/usr/share/efi-utils/grub.cfg "${grub_dir}"
-    local drv='free' switch="no"
-    if ${nonfree_mhwd};then
-        drv='nonfree'
-        switch="yes"
-    fi
-    vars_to_boot_conf ${grub_dir}/grub.cfg ${drv} ${switch}
+prepare_grub_boot(){
+    msg2 "Preparing grub.cfg ..."
+    local grub_dir=$1/grub
+    mkdir "${grub_dir}" #/{fonts,themes,locale}
+    cp /usr/share/manjaro-tools/grub.cfg "${grub_dir}"
+    local drv='nonfree' switch="no"
+    ${nonfree_mhwd} && switch="yes"
+    vars_to_boot_conf ${grub_dir}/grub.cfg #"${drv}" "${switch}"
+#     cp -r /usr/lib/grub/x86_64-efi/ "${grub_dir}"
+#     cp /usr/share/grub/unicode.pf2 "${grub_dir}/fonts"
 }
 
-check_syslinux_select(){
-    local boot=${iso_root}/${iso_name}/boot
-    if [[ ! -f ${boot}/x86_64/vmlinuz ]] ; then
-        msg2 "Configuring syslinux for i686 architecture only ..."
-        sed -e "s/select.cfg/i686_inc.cfg/g" -i "$1/miso.cfg"
-    fi
-}
+# prepare_efi_grub(){
+#     local efi=$1/EFI/boot grub_dir=$1/boot/grub
+#     msg2 "Preparing efi grub ..."
+#
+#     prepare_dir "${efi}"
+#
+#
+#     cp $2/usr/share/efitools/efi/PreLoader.efi ${efi}/bootx64.efi
+#     #cp $2/usr/share/efi-utils/grubx64.efi ${efi}/
+#
+#
+# }
 
-check_syslinux_nonfree(){
-    msg2 "Configuring syslinux menu ..."
-    sed -e "/LABEL nonfree/,/^$/d" -i "$1/miso_sys_i686.cfg"
-    sed -e "/LABEL nonfree/,/^$/d" -i "$1/miso_sys_x86_64.cfg"
-    sed -e "/nonfree/ d" -i $1/syslinux.msg
-}
-
-prepare_isolinux(){
-    local syslinux=$1/usr/lib/syslinux/bios
-    msg2 "Copying isolinux binaries ..."
-    cp ${syslinux}/{{isolinux,isohdpfx}.bin,ldlinux.c32} $2
-    msg2 "Copying isolinux.cfg ..."
-    cp $1/usr/share/syslinux/isolinux/isolinux.cfg $2
-    vars_to_boot_conf "$2/isolinux.cfg"
-}
-
-prepare_syslinux(){
-    local syslinux=$1/usr/lib/syslinux/bios
-    msg2 "Copying syslinux binaries ..."
-    cp ${syslinux}/{*.c32,lpxelinux.0,memdisk} $2
-    msg2 "Copying syslinux theme ..."
-    syslinux=$1/usr/share/syslinux/theme
-    cp ${syslinux}/* $2
-    for conf in $2/*.cfg; do
-        vars_to_boot_conf "${conf}"
-    done
-    # Check for dual-arch
-    check_syslinux_select "$2"
-    if ! ${nonfree_mhwd};then
-        check_syslinux_nonfree "$2"
-    fi
-}
+# check_syslinux_select(){
+#     local boot=${iso_root}/${iso_name}/boot
+#     if [[ ! -f ${boot}/x86_64/vmlinuz ]] ; then
+#         msg2 "Configuring syslinux for i686 architecture only ..."
+#         sed -e "s/select.cfg/i686_inc.cfg/g" -i "$1/miso.cfg"
+#     fi
+# }
+#
+# check_syslinux_nonfree(){
+#     msg2 "Configuring syslinux menu ..."
+#     sed -e "/LABEL nonfree/,/^$/d" -i "$1/miso_sys_i686.cfg"
+#     sed -e "/LABEL nonfree/,/^$/d" -i "$1/miso_sys_x86_64.cfg"
+#     sed -e "/nonfree/ d" -i $1/syslinux.msg
+# }
+#
+# prepare_isolinux(){
+#     local syslinux=$1/usr/lib/syslinux/bios
+#     msg2 "Copying isolinux binaries ..."
+#     cp ${syslinux}/{{isolinux,isohdpfx}.bin,ldlinux.c32} $2
+#     msg2 "Copying isolinux.cfg ..."
+#     cp $1/usr/share/syslinux/isolinux/isolinux.cfg $2
+#     vars_to_boot_conf "$2/isolinux.cfg"
+# }
+#
+# prepare_syslinux(){
+#     local syslinux=$1/usr/lib/syslinux/bios
+#     msg2 "Copying syslinux binaries ..."
+#     cp ${syslinux}/{*.c32,lpxelinux.0,memdisk} $2
+#     msg2 "Copying syslinux theme ..."
+#     syslinux=$1/usr/share/syslinux/theme
+#     cp ${syslinux}/* $2
+#     for conf in $2/*.cfg; do
+#         vars_to_boot_conf "${conf}"
+#     done
+#     # Check for dual-arch
+#     check_syslinux_select "$2"
+#     if ! ${nonfree_mhwd};then
+#         check_syslinux_nonfree "$2"
+#     fi
+# }
