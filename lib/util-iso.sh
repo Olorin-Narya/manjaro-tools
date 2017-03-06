@@ -378,7 +378,7 @@ make_efi_usb() {
     if [[ ! -e ${work_dir}/build.${FUNCNAME} ]]; then
         msg "Prepare [/iso/EFI]"
 
-        prepare_efi_grub "${iso_root}"
+        prepare_efi_grub "${iso_root}" "${work_dir}/livefs"
 
         : > ${work_dir}/build.${FUNCNAME}
         msg "Done [/iso/EFI]"
@@ -399,7 +399,7 @@ make_efi_dvd(){
         mount_img "${img}" "${mnt}"
         prepare_efiboot_image "${mnt}" "${iso_root}"
 
-        prepare_efi_grub "${mnt}"
+        prepare_efi_grub "${mnt}" "${work_dir}/livefs"
 
         umount_img "${mnt}"
 
