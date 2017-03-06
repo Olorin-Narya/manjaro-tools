@@ -1,4 +1,4 @@
-Version=0.14.0
+Version=0.15.0
 
 PREFIX = /usr/local
 SYSCONFDIR = /etc
@@ -75,6 +75,7 @@ LIBS_ISO = \
 
 SHARED_ISO = \
 	data/pacman-mhwd.conf \
+	data/grub.cfg \
 	data/profile.conf.example
 
 CPIOHOOKS = \
