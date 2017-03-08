@@ -77,32 +77,32 @@ vars_to_boot_conf(){
         -i $1
 }
 
-prepare_efi_loader(){
-    local efi_data=$1/usr/share/efi-utils efi=$2/EFI/boot
-    msg2 "Preparing efi loaders ..."
-    prepare_dir "${efi}"
-    cp $1/usr/share/efitools/efi/PreLoader.efi ${efi}/bootx64.efi
-    cp $1/usr/share/efitools/efi/HashTool.efi ${efi}
-    cp ${efi_data}/gummibootx64.efi ${efi}/loader.efi
-    cp ${efi_data}/shellx64_v{1,2}.efi $2/EFI
-
-    local entries=$2/loader/entries
-    msg2 "Preparing efi loader config ..."
-    prepare_dir "${entries}"
-
-    cp ${efi_data}/loader.conf $2/loader/loader.conf
-    vars_to_boot_conf $2/loader/loader.conf
-    cp ${efi_data}/uefi-shell-v{1,2}-x86_64.conf ${entries}
-
-    local drv='nonfree' switch="no"
-    cp ${efi_data}/entry-x86_64-$3.conf ${entries}/${iso_name}-x86_64.conf
-    vars_to_boot_conf "${entries}/${iso_name}-x86_64.conf" "$drv" "$switch"
-    if ${nonfree_mhwd};then
-        switch="yes"
-        cp ${efi_data}/entry-x86_64-$3.conf ${entries}/${iso_name}-x86_64-nonfree.conf
-        vars_to_boot_conf "${entries}/${iso_name}-x86_64-nonfree.conf" "$drv" "$switch"
-    fi
-}
+# prepare_efi_loader(){
+#     local efi_data=$1/usr/share/efi-utils efi=$2/EFI/boot
+#     msg2 "Preparing efi loaders ..."
+#     prepare_dir "${efi}"
+#     cp $1/usr/share/efitools/efi/PreLoader.efi ${efi}/bootx64.efi
+#     cp $1/usr/share/efitools/efi/HashTool.efi ${efi}
+#     cp ${efi_data}/gummibootx64.efi ${efi}/loader.efi
+#     cp ${efi_data}/shellx64_v{1,2}.efi $2/EFI
+#
+#     local entries=$2/loader/entries
+#     msg2 "Preparing efi loader config ..."
+#     prepare_dir "${entries}"
+#
+#     cp ${efi_data}/loader.conf $2/loader/loader.conf
+#     vars_to_boot_conf $2/loader/loader.conf
+#     cp ${efi_data}/uefi-shell-v{1,2}-x86_64.conf ${entries}
+#
+#     local drv='nonfree' switch="no"
+#     cp ${efi_data}/entry-x86_64-$3.conf ${entries}/${iso_name}-x86_64.conf
+#     vars_to_boot_conf "${entries}/${iso_name}-x86_64.conf" "$drv" "$switch"
+#     if ${nonfree_mhwd};then
+#         switch="yes"
+#         cp ${efi_data}/entry-x86_64-$3.conf ${entries}/${iso_name}-x86_64-nonfree.conf
+#         vars_to_boot_conf "${entries}/${iso_name}-x86_64-nonfree.conf" "$drv" "$switch"
+#     fi
+# }
 
 check_syslinux_select(){
     local boot=${iso_root}/${iso_name}/boot
@@ -128,9 +128,9 @@ prepare_isolinux(){
     vars_to_boot_conf "$2/isolinux.cfg"
 }
 
-prepare_syslinux(){
+prepare_syslinux_bios(){
     local syslinux=$1/usr/lib/syslinux/bios
-    msg2 "Copying syslinux binaries ..."
+    msg2 "Copying syslinux bios binaries ..."
     cp ${syslinux}/{*.c32,lpxelinux.0,memdisk} $2
     msg2 "Copying syslinux theme ..."
     syslinux=$1/usr/share/syslinux/theme
@@ -142,5 +142,22 @@ prepare_syslinux(){
     check_syslinux_select "$2"
     if ! ${nonfree_mhwd};then
         check_syslinux_nonfree "$2"
+    fi
+}
+
+prepare_syslinux_efi(){
+    local syslinux=$1/usr/lib/syslinux/efi64 efi=$2
+    msg2 "Copying syslinux efi binaries ..."
+    cp ${syslinux}/* ${efi}
+    msg2 "Copying syslinux theme ..."
+    syslinux=$1/usr/share/syslinux/theme
+    cp ${syslinux}/* ${efi}
+    for conf in ${efi}/*.cfg; do
+        vars_to_boot_conf "${conf}"
+    done
+    # Check for dual-arch
+    check_syslinux_select "${efi}"
+    if ! ${nonfree_mhwd};then
+        check_syslinux_nonfree "${efi}"
     fi
 }

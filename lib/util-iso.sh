@@ -374,17 +374,40 @@ make_image_boot() {
     fi
 }
 
-# Prepare /EFI
-make_efi_usb() {
-    if [[ ! -e ${work_dir}/build.${FUNCNAME} ]]; then
-        msg "Prepare [/iso/EFI]"
-        prepare_efi_loader  "${work_dir}/livefs" "${iso_root}" "usb"
-        : > ${work_dir}/build.${FUNCNAME}
-        msg "Done [/iso/EFI]"
-    fi
-}
+# make_efi_usb() {
+#     if [[ ! -e ${work_dir}/build.${FUNCNAME} ]]; then
+#         msg "Prepare [/iso/EFI]"
+#         prepare_efi_loader  "${work_dir}/livefs" "${iso_root}" "usb"
+#         : > ${work_dir}/build.${FUNCNAME}
+#         msg "Done [/iso/EFI]"
+#     fi
+# }
+#
+# # Prepare kernel.img::/EFI for "El Torito" EFI boot mode
+# make_efi_dvd() {
+#     if [[ ! -e ${work_dir}/build.${FUNCNAME} ]]; then
+#         msg "Prepare [/efiboot/EFI]"
+#         local src="${iso_root}/EFI/miso"
+#         mkdir -p "${src}"
+#
+#         local size=31M
+#         local mnt="${mnt_dir}/efiboot" img="${src}/efiboot.img"
+#         ${pxe_boot} && size=46M
+#         msg2 "Creating fat image of %s ..." "${size}"
+#         truncate -s ${size} "${img}"
+#         mkfs.fat -n MISO_EFI "${img}" &>/dev/null
+#         mkdir -p "${mnt}"
+#         mount_img "${img}" "${mnt}"
+#         prepare_efiboot_image "${mnt}" "${iso_root}"
+#         prepare_efi_loader "${work_dir}/livefs" "${mnt}" "dvd"
+#         umount_img "${mnt}"
+#
+#         : > ${work_dir}/build.${FUNCNAME}
+#         msg "Done [/efiboot/EFI]"
+#     fi
+# }
 
-# Prepare kernel.img::/EFI for "El Torito" EFI boot mode
+# # Prepare kernel.img::/EFI for "El Torito" EFI boot mode
 make_efi_dvd() {
     if [[ ! -e ${work_dir}/build.${FUNCNAME} ]]; then
         msg "Prepare [/efiboot/EFI]"
@@ -400,11 +423,25 @@ make_efi_dvd() {
         mkdir -p "${mnt}"
         mount_img "${img}" "${mnt}"
         prepare_efiboot_image "${mnt}" "${iso_root}"
-        prepare_efi_loader "${work_dir}/livefs" "${mnt}" "dvd"
+        prepare_syslinux_efi "${work_dir}/livefs" "${mnt}"
         umount_img "${mnt}"
 
         : > ${work_dir}/build.${FUNCNAME}
         msg "Done [/efiboot/EFI]"
+    fi
+}
+
+make_efi_usb() {
+    if [[ ! -e ${work_dir}/build.${FUNCNAME} ]]; then
+        msg "Prepare efi [/iso/EFI/syslinux]"
+        local syslinux=${iso_root}/EFI/syslinux
+        mkdir -p ${syslinux}
+        prepare_syslinux_efi "${work_dir}/livefs" "${syslinux}"
+        mkdir -p ${syslinux}/hdt
+#         gzip -c -9 ${work_dir}/rootfs/usr/share/hwdata/pci.ids > ${syslinux}/hdt/pciids.gz
+#         gzip -c -9 ${work_dir}/livefs/usr/lib/modules/*-MANJARO/modules.alias > ${syslinux}/hdt/modalias.gz
+        : > ${work_dir}/build.${FUNCNAME}
+        msg "Done [/iso/EFI/syslinux]"
     fi
 }
 
@@ -422,10 +459,10 @@ make_isolinux() {
 
 make_syslinux() {
     if [[ ! -e ${work_dir}/build.${FUNCNAME} ]]; then
-        msg "Prepare [/iso/${iso_name}/boot/syslinux]"
+        msg "Prepare bios [/iso/${iso_name}/boot/syslinux]"
         local syslinux=${iso_root}/${iso_name}/boot/syslinux
         mkdir -p ${syslinux}
-        prepare_syslinux "${work_dir}/livefs" "${syslinux}"
+        prepare_syslinux_bios "${work_dir}/livefs" "${syslinux}"
         mkdir -p ${syslinux}/hdt
 #         gzip -c -9 ${work_dir}/rootfs/usr/share/hwdata/pci.ids > ${syslinux}/hdt/pciids.gz
 #         gzip -c -9 ${work_dir}/livefs/usr/lib/modules/*-MANJARO/modules.alias > ${syslinux}/hdt/modalias.gz
@@ -488,8 +525,8 @@ prepare_images(){
     run_safe "make_isolinux"
     run_safe "make_syslinux"
     if [[ "${target_arch}" == "x86_64" ]]; then
-        run_safe "make_efi_usb"
         run_safe "make_efi_dvd"
+        run_safe "make_efi_usb"
     fi
     show_elapsed_time "${FUNCNAME}" "${timer}"
 }
